@@ -100,7 +100,7 @@ async function writeLock(
     lock_reason: reason,
     reason,
     locked_at: nowIso(),
-    created_at: nowIso(),
+    updated_at: nowIso(),
     expires_at,
     lock_expires_at: expires_at,
     meta: meta ?? null,
@@ -114,7 +114,7 @@ async function writeLock(
 
   // If schema rejects unknown columns, retry with minimal payload
   if (error) {
-    const minimal: any = { page, test_id, winner, created_at: nowIso() };
+    const minimal: any = { page, test_id, winner, updated_at: nowIso() };
     const retry = await supabase
       .from("cta_winner_locks_v1")
       .insert(minimal)
