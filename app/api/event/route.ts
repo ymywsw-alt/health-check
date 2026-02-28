@@ -78,7 +78,7 @@ const event_name = String(body?.event_name ?? body?.action ?? "");
       event_name,
       variant,
       is_test,
-      ts: ts.toISOString(),
+      created_at: ts.toISOString(),
       bucket_iso,
       dedup_key,
       meta: body?.meta ?? null,
