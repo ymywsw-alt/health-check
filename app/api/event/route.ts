@@ -2,15 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// ✅ IMPORTANT:
+// - Do NOT create Supabase client at module scope (build-time eval can fail).
+// - Create it inside the handler so env is read at request-time.
+function supabaseServer() {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    "";
+
+  if (!url) throw new Error("Missing SUPABASE URL env");
+  if (!key) throw new Error("Missing SUPABASE KEY env");
+
+  return createClient(url, key, { auth: { persistSession: false } });
+}
 
 // enter_page = 10s bucket, click/complete = 1s bucket
 function bucketTimeMs(eventName: string) {
   if (eventName === "enter_page") return 10_000;
-  // click_* and complete_funnel and others -> 1s
   return 1_000;
 }
 
@@ -26,6 +38,8 @@ function sha1(input: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = supabaseServer();
+
     const body = await req.json();
 
     const sid = String(body?.sid ?? body?.session_id ?? "");
@@ -34,69 +48,66 @@ export async function POST(req: NextRequest) {
     const variant = body?.variant != null ? String(body.variant) : null;
     const is_test = !!body?.is_test;
 
+    // minimal validation
     if (!sid || !page || !event_name) {
       return NextResponse.json(
-        { ok: false, error: "missing required fields: sid, page, event_name" },
+        { ok: false, error: "Missing required fields: sid/page/event_name" },
         { status: 400 }
       );
     }
 
-    // timestamp: client may send ts; otherwise server now
-    const rawTs = body?.ts ? new Date(body.ts) : new Date();
-    const safeTs = isNaN(rawTs.getTime()) ? new Date() : rawTs;
+    // bucket + dedup (baseline behavior)
+    const ts = body?.ts ? new Date(body.ts) : new Date();
+    const bucket_iso = floorToBucketISO(ts, bucketTimeMs(event_name));
 
-    const bucketMs = bucketTimeMs(event_name);
-    const bucket_iso = floorToBucketISO(safeTs, bucketMs);
-
-    // ✅ dedup_key (SHA1)
-    // 중복 제거 기준: (sid, page, event_name, variant, is_test, bucket_iso)
     const dedup_key = sha1(
-      [sid, page, event_name, variant ?? "", is_test ? "1" : "0", bucket_iso].join("|")
+      [
+        sid,
+        page,
+        event_name,
+        variant ?? "",
+        is_test ? "1" : "0",
+        bucket_iso,
+      ].join("|")
     );
 
-    const ua = req.headers.get("user-agent") ?? null;
-
-    // meta는 jsonb로 안전하게
-    const meta = (body?.meta && typeof body.meta === "object") ? body.meta : {};
-
-    // ✅ 저장 (중복은 DB unique(dedup_key) + upsert/ignore로 제거)
-    // - 테이블: funnel_events_v1
-    // - 컬럼은 아래 이름을 기준으로 설계된 상태를 전제(네 BASELINE 설명과 일치)
-    const row = {
+    // Insert to funnel_events_v1
+    const payload = {
       sid,
       page,
       event_name,
       variant,
       is_test,
+      ts: ts.toISOString(),
       bucket_iso,
       dedup_key,
-      meta,
-      ua,
-      occurred_at: bucket_iso, // 분석용 (버킷 기준)
-      created_at: new Date().toISOString(),
+      meta: body?.meta ?? null,
+      ua: body?.ua ?? null,
     };
 
-    // onConflict는 supabase-js에서 upsert로 처리
-    // dedup_key가 unique라면 중복은 업데이트 없이 사실상 "1건 유지"가 됨
     const { error } = await supabase
       .from("funnel_events_v1")
-      .upsert(row, { onConflict: "dedup_key", ignoreDuplicates: true });
+      .insert(payload);
 
+    // If dedup_key is unique and we hit conflict, treat as ok (idempotent)
     if (error) {
-      return NextResponse.json(
-        { ok: false, error: "insert_failed", detail: error.message },
-        { status: 500 }
-      );
+      const msg = String(error.message || "");
+      const isDup =
+        msg.toLowerCase().includes("duplicate") ||
+        msg.toLowerCase().includes("unique");
+
+      if (!isDup) {
+        return NextResponse.json(
+          { ok: false, error: "DB insert failed", detail: error },
+          { status: 500 }
+        );
+      }
     }
 
-    return NextResponse.json({
-      ok: true,
-      dedup_key,
-      bucket_iso,
-    });
+    return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e: any) {
     return NextResponse.json(
-      { ok: false, error: "server_error", detail: String(e?.message ?? e) },
+      { ok: false, error: e?.message || "Unknown error" },
       { status: 500 }
     );
   }
