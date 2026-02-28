@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     const sid = String(body?.sid ?? body?.session_id ?? "");
-    const page = String(body?.page ?? "");
-    const event_name = String(body?.event_name ?? "");
+    const page = String(body?.page ?? body?.category ?? "");
+const event_name = String(body?.event_name ?? body?.action ?? "");
     const variant = body?.variant != null ? String(body.variant) : null;
     const is_test = !!body?.is_test;
 
