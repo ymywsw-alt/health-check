@@ -54,12 +54,12 @@ export default function BPPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: "bp",
-            action: "enter_page",
-            variant: v,
-            session_id: sessionId,
-            is_test: isTest, // ✅ 추가
-          }),
+  page: "bp",
+  event_name: "enter_page",
+  variant: v,
+  sid: sessionId,
+  is_test: isTest,
+})
         }).catch(() => {});
       }
     })();
@@ -73,12 +73,12 @@ export default function BPPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category: "bp",
-          action: "complete_funnel",
-          variant: ctaWinner,
-          session_id: sessionId,
-          is_test: isTest, // ✅ 추가
-        }),
+  page: "bp",
+  event_name: "click_complete_cta",
+  variant: ctaWinner,
+  sid: sessionId,
+  is_test: isTest,
+})
       });
     } catch {
       // ignore

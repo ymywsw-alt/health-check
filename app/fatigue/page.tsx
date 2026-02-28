@@ -54,12 +54,12 @@ export default function FatiguePage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: "fatigue",
-            action: "enter_page",
-            variant: v,
-            session_id: sessionId,
-            is_test: isTest,
-          }),
+  page: "fatigue",
+  event_name: "enter_page",
+  variant: v,
+  sid: sessionId,
+  is_test: isTest,
+})
         }).catch(() => {});
       }
     })();
@@ -73,12 +73,12 @@ export default function FatiguePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category: "fatigue",
-          action: "click_bp_cta",
-          variant: ctaWinner,
-          session_id: sessionId,
-          is_test: isTest,
-        }),
+  page: "fatigue",
+  event_name: "click_bp_cta",
+  variant: ctaWinner,
+  sid: sessionId,
+  is_test: isTest,
+})
       });
     } catch {
       // ignore

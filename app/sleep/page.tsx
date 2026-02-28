@@ -54,12 +54,12 @@ export default function SleepPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: "sleep",
-            action: "enter_page",
-            variant: v,
-            session_id: sessionId,
-            is_test: isTest,
-          }),
+  page: "sleep",
+  event_name: "enter_page",
+  variant: v,
+  sid: sessionId,
+  is_test: isTest,
+}),
         }).catch(() => {});
       }
     })();
@@ -73,12 +73,12 @@ export default function SleepPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category: "sleep",
-          action: "click_joint_cta",
-          variant: ctaWinner,
-          session_id: sessionId,
-          is_test: isTest,
-        }),
+  page: "sleep",
+  event_name: "click_joint_cta",
+  variant: ctaWinner,
+  sid: sessionId,
+  is_test: isTest,
+}),
       });
     } catch {
       // ignore

@@ -54,12 +54,12 @@ export default function JointPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            category: "joint",
-            action: "enter_page",
-            variant: v,
-            session_id: sessionId,
-            is_test: isTest,
-          }),
+  page: "joint",
+  event_name: "enter_page",
+  variant: v,
+  sid: sessionId,
+  is_test: isTest,
+})
         }).catch(() => {});
       }
     })();
@@ -73,12 +73,12 @@ export default function JointPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category: "joint",
-          action: "click_fatigue_cta",
-          variant: ctaWinner,
-          session_id: sessionId,
-          is_test: isTest,
-        }),
+  page: "joint",
+  event_name: "click_fatigue_cta",
+  variant: ctaWinner,
+  sid: sessionId,
+  is_test: isTest,
+})
       });
     } catch {
       // ignore
