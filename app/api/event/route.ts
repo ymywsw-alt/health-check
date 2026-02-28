@@ -78,7 +78,7 @@ const event_name = String(body?.event_name ?? body?.action ?? "");
   event_name,
   variant,
   is_test,
-  bucket_iso,   // 이미 위에서 계산된 bucket_iso 그대로 사용
+  bucket_iso,
   dedup_key,
 };
 
