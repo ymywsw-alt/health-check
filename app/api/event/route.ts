@@ -73,16 +73,14 @@ const event_name = String(body?.event_name ?? body?.action ?? "");
 
     // Insert to funnel_events_v1
     const payload = {
-      sid,
-      page,
-      event_name,
-      variant,
-      is_test,
-      bucket_iso: ts.toISOString(),
-      dedup_key,
-      meta: body?.meta ?? null,
-      ua: body?.ua ?? null,
-    };
+  sid,
+  page,
+  event_name,
+  variant,
+  is_test,
+  bucket_iso,   // 이미 위에서 계산된 bucket_iso 그대로 사용
+  dedup_key,
+};
 
     const { error } = await supabase
       .from("funnel_events_v1")
